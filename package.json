@@ -1,0 +1,30 @@
+{
+  "name": "dokploy-cli",
+  "version": "0.1.0",
+  "description": "Unofficial CLI for Dokploy: deployment status, poll, logs, apps",
+  "type": "module",
+  "bin": {
+    "dokploy": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "prepare": "tsc"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "ora": "^8.1.1",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
