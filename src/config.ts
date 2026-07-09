@@ -8,6 +8,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 export type GlobalConfig = {
   baseUrl: string;
   apiKey: string;
+  editor?: string;
 };
 
 export type ProjectSettings = {
@@ -15,28 +16,33 @@ export type ProjectSettings = {
   applicationId?: string;
   projectId?: string;
   name?: string;
+  editor?: string;
 };
 
 const CONFIG_DIR = join(homedir(), ".dokploy-cli");
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
-const PROJECT_FILE = ".dokploysettings";
+const PROJECT_FILE = ".dokploy.json";
+const LEGACY_PROJECT_FILE = ".dokploysettings";
+
+// raw file contents without env-var overrides or validation; used when merging updates
+export function readGlobalConfigFile(): Partial<GlobalConfig> {
+  if (!existsSync(CONFIG_FILE)) return {};
+  try {
+    return JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
+  } catch {
+    throw new Error(`invalid json in ${CONFIG_FILE}`);
+  }
+}
 
 export function loadGlobalConfig(): GlobalConfig {
   const baseUrl = process.env.DOKPLOY_BASE_URL;
   const apiKey = process.env.DOKPLOY_API_KEY;
-
-  let file: Partial<GlobalConfig> = {};
-  if (existsSync(CONFIG_FILE)) {
-    try {
-      file = JSON.parse(readFileSync(CONFIG_FILE, "utf8"));
-    } catch {
-      throw new Error(`invalid json in ${CONFIG_FILE}`);
-    }
-  }
+  const file = readGlobalConfigFile();
 
   const resolved: GlobalConfig = {
     baseUrl: (baseUrl ?? file.baseUrl ?? "").replace(/\/+$/, ""),
     apiKey: apiKey ?? file.apiKey ?? "",
+    editor: file.editor,
   };
 
   if (!resolved.baseUrl || !resolved.apiKey) {
@@ -54,13 +60,16 @@ export function saveGlobalConfig(cfg: GlobalConfig): string {
 }
 
 export function loadProjectSettings(cwd = process.cwd()): ProjectSettings | null {
-  const path = join(cwd, PROJECT_FILE);
-  if (!existsSync(path)) return null;
-  try {
-    return JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    throw new Error(`invalid json in ${path}`);
+  for (const name of [PROJECT_FILE, LEGACY_PROJECT_FILE]) {
+    const path = join(cwd, name);
+    if (!existsSync(path)) continue;
+    try {
+      return JSON.parse(readFileSync(path, "utf8"));
+    } catch {
+      throw new Error(`invalid json in ${path}`);
+    }
   }
+  return null;
 }
 
 export function saveProjectSettings(settings: ProjectSettings, cwd = process.cwd()): string {

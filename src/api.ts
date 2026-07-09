@@ -69,16 +69,34 @@ export class DokployError extends Error {
   }
 }
 
+export type LifecycleAction = "deploy" | "redeploy" | "start" | "stop";
+
 export class DokployClient {
   constructor(private cfg: GlobalConfig) {}
 
   private async get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.cfg.baseUrl}/api/${path}`);
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+    return this.request<T>(url, { headers: { "x-api-key": this.cfg.apiKey } }, path);
+  }
 
+  private async post<T>(path: string, body: unknown): Promise<T> {
+    const url = new URL(`${this.cfg.baseUrl}/api/${path}`);
+    return this.request<T>(
+      url,
+      {
+        method: "POST",
+        headers: { "x-api-key": this.cfg.apiKey, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      path,
+    );
+  }
+
+  private async request<T>(url: URL, init: RequestInit, path: string): Promise<T> {
     let res: Response;
     try {
-      res = await fetch(url, { headers: { "x-api-key": this.cfg.apiKey } });
+      res = await fetch(url, init);
     } catch (e) {
       throw new DokployError(`network error reaching ${url.host}: ${(e as Error).message}`);
     }
@@ -88,7 +106,8 @@ export class DokployClient {
       const detail = body ? ` — ${body.slice(0, 200)}` : "";
       throw new DokployError(`${res.status} ${res.statusText} on ${path}${detail}`, res.status);
     }
-    return (await res.json()) as T;
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   }
 
   projects(): Promise<Project[]> {
@@ -109,5 +128,28 @@ export class DokployClient {
 
   deploymentsByApplication(applicationId: string): Promise<Deployment[]> {
     return this.get<Deployment[]>("deployment.all", { applicationId });
+  }
+
+  applicationAction(action: LifecycleAction, applicationId: string): Promise<unknown> {
+    return this.post(`application.${action}`, { applicationId });
+  }
+
+  composeAction(action: LifecycleAction, composeId: string): Promise<unknown> {
+    return this.post(`compose.${action}`, { composeId });
+  }
+
+  // saveEnvironment requires the sibling build fields; preserve them from the current record
+  saveApplicationEnv(app: Application, env: string): Promise<unknown> {
+    return this.post("application.saveEnvironment", {
+      applicationId: app.applicationId,
+      env,
+      buildArgs: (app.buildArgs as string | null) ?? null,
+      buildSecrets: (app.buildSecrets as string | null) ?? null,
+      createEnvFile: (app.createEnvFile as boolean) ?? false,
+    });
+  }
+
+  saveComposeEnv(composeId: string, env: string): Promise<unknown> {
+    return this.post("compose.update", { composeId, env });
   }
 }
