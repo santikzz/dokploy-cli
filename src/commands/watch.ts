@@ -25,7 +25,7 @@ export async function watchCommand(target: string | undefined) {
     const age = first.finishedAt ? Date.now() - new Date(first.finishedAt).getTime() : 0;
     report(first);
     if (age > STALE_MS) {
-      console.log(pc.dim(`(latest finished ${fmtTime(first.finishedAt)} — nothing running)`));
+      console.log(pc.dim(`(latest finished ${fmtTime(first.finishedAt)} - nothing running)`));
     }
     process.exitCode = first.status === "error" ? 1 : 0;
     return;

@@ -103,7 +103,7 @@ export class DokployClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      const detail = body ? ` — ${body.slice(0, 200)}` : "";
+      const detail = body ? ` - ${body.slice(0, 200)}` : "";
       throw new DokployError(`${res.status} ${res.statusText} on ${path}${detail}`, res.status);
     }
     const text = await res.text();

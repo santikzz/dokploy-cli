@@ -1,8 +1,13 @@
 {
-  "name": "dokploy-cli",
-  "version": "0.1.0",
+  "name": "@santikzz/dokploy-cli",
+  "version": "0.2.1",
   "description": "Unofficial CLI for Dokploy: deployment status, poll, logs, apps",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/santikzz/dokploy-cli.git"
+  },
   "bin": {
     "dokploy": "dist/index.js"
   },
@@ -12,7 +17,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
-    "prepare": "tsc"
+    "prepublishOnly": "npm run build"
   },
   "engines": {
     "node": ">=18"
