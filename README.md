@@ -118,6 +118,7 @@ You can find ids with `dokploy projects | grep -i "my-app"` or with the composeI
 | `dokploy env -e --editor <cmd> [target]` | edit with a one-off editor override |
 | `dokploy init` | pick a host and write `.dokploy.json` in the current directory |
 | `dokploy login [alias]` | add or update a host (`--editor` sets the default editor) |
+| `dokploy update` | update dokploy-cli to the latest version on npm |
 
 `[target]` is optional: a project/service **name** or a raw **compose id**. Omit it to
 use the `.dokploy.json` in the current directory. Every command accepts `-H <alias>` to
@@ -149,6 +150,10 @@ dokploy deploy my-app && dokploy watch my-app
 - Status values: `running`, `done`, `error`, `idle`.
 - `deploy`/`redeploy` only trigger the build - follow it with `dokploy watch`.
 - `restart` is stop + start (Dokploy has no single restart endpoint); no rebuild.
+- Every command checks npm for a newer version and, if one exists, prints a notice to
+  stderr after the command. The check is skipped when stderr is not a terminal (CI,
+  pipes). `dokploy update` reinstalls with npm, or pnpm when pnpm installed it; a source
+  checkout (`npm link`) gets the `git pull && npm run build` steps instead.
 - `env -e` opens an ephemeral `.env` temp file. **Save and close the tab** to apply;
   the temp file is deleted afterwards. On close the content is validated (KEY=VALUE
   format, valid keys, balanced quotes) - if it's invalid the errors are printed with

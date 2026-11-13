@@ -8,18 +8,32 @@ import { projectsCommand } from "./commands/projects.js";
 import { loginCommand, initCommand } from "./commands/setup.js";
 import { lifecycleCommand } from "./commands/deploy.js";
 import { envCommand } from "./commands/env.js";
+import { VERSION, checkForUpdate, updateCommand } from "./update.js";
 
 const program = new Command();
+
+// runs alongside the command, printed after it to stderr so piped stdout stays clean
+let updateNotice: Promise<string | null> = Promise.resolve(null);
 
 program
   .name("dokploy")
   .description("unofficial cli for dokploy: deployment status, poll, logs")
-  .version("0.3.0")
+  .version(VERSION)
   .option("-H, --host <alias>", "host alias to use (overrides .dokploy.json)")
-  .hook("preAction", (cmd) => {
+  .hook("preAction", (cmd, action) => {
     const { host } = cmd.opts();
     if (host) process.env.DOKPLOY_HOST = host;
+    if (action.name() !== "update") updateNotice = checkForUpdate();
+  })
+  .hook("postAction", async () => {
+    const notice = await updateNotice;
+    if (notice) console.error(notice);
   });
+
+program
+  .command("update")
+  .description("update dokploy-cli to the latest version")
+  .action(run(updateCommand));
 
 program
   .command("login")
