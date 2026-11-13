@@ -1,15 +1,19 @@
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import pc from "picocolors";
+import { DokployClient, projectServices } from "../api.js";
 import {
   readGlobalConfig,
   saveGlobalConfig,
   saveProjectSettings,
   loadProjectSettings,
   type GlobalConfig,
+  type Host,
+  type ProjectSettings,
 } from "../config.js";
 
 type HostOpts = { baseUrl?: string; apiKey?: string };
+type Service = { name: string; label: string; ids: { composeId?: string; applicationId?: string } };
 
 async function prompt(question: string, fallback = ""): Promise<string> {
   const rl = createInterface({ input: stdin, output: stdout });
@@ -86,15 +90,73 @@ export async function loginCommand(alias: string | undefined, opts: HostOpts & {
   await addHost(cfg, alias, opts);
 }
 
-// dokploy init -> picks a host and writes .dokploy.json in the current directory
+async function listServices(host: Host): Promise<Service[]> {
+  try {
+    const projects = await new DokployClient(host).projects();
+    return projects.flatMap((p) => {
+      const { compose, applications } = projectServices(p);
+      return [
+        ...compose.map((c) => ({ name: c.name, label: `${p.name} / ${c.name}`, ids: { composeId: c.composeId } })),
+        ...applications.map((a) => ({
+          name: a.name,
+          label: `${p.name} / ${a.name}`,
+          ids: { applicationId: a.applicationId },
+        })),
+      ];
+    });
+  } catch (e) {
+    console.log(pc.yellow(`could not list services: ${(e as Error).message}`));
+    return [];
+  }
+}
+
+// numbered list of every compose and app on the host. a pasted id still works
+async function pickService(host: Host, current: ProjectSettings): Promise<Service> {
+  const services = await listServices(host);
+  const numWidth = String(services.length).length;
+  const width = Math.max(0, ...services.map((s) => s.label.length));
+  services.forEach((s, i) => {
+    const id = s.ids.composeId ? `compose ${s.ids.composeId}` : `app ${s.ids.applicationId}`;
+    console.log(`  ${String(i + 1).padStart(numWidth)}) ${s.label.padEnd(width)}  ${pc.dim(id)}`);
+  });
+
+  const fallback = current.composeId ?? current.applicationId ?? "";
+  while (true) {
+    const answer = await prompt(services.length ? "service (number or id)" : "compose id", fallback);
+    if (!answer) throw new Error("compose id is required");
+
+    if (services.length && /^\d+$/.test(answer)) {
+      const picked = services[Number(answer) - 1];
+      if (picked) return picked;
+      console.log(pc.red(`pick 1-${services.length} or paste an id`));
+      continue;
+    }
+
+    const known = services.find((s) => s.ids.composeId === answer || s.ids.applicationId === answer);
+    if (known) return known;
+    if (answer === current.applicationId) return { name: "", label: answer, ids: { applicationId: answer } };
+    return { name: "", label: answer, ids: { composeId: answer } };
+  }
+}
+
+// dokploy init -> picks a host and a service, writes .dokploy.json in the current directory
 export async function initCommand(opts: { composeId?: string; name?: string }) {
   const existing = loadProjectSettings() ?? {};
   const host = await pickHost(existing.host);
 
-  const composeId = opts.composeId ?? (await prompt("compose id", existing.composeId ?? ""));
-  if (!composeId) throw new Error("compose id is required");
-  const name = opts.name ?? (await prompt("name (optional)", existing.name ?? ""));
+  const service: Service = opts.composeId
+    ? { name: "", label: opts.composeId, ids: { composeId: opts.composeId } }
+    : await pickService(readGlobalConfig().hosts[host], existing);
+  const name = opts.name ?? (await prompt("name (optional)", service.name || existing.name || ""));
 
-  const path = saveProjectSettings({ ...existing, host, composeId, name: name || undefined });
+  // clear both ids first so switching between compose and app leaves no stale id
+  const path = saveProjectSettings({
+    ...existing,
+    host,
+    composeId: undefined,
+    applicationId: undefined,
+    ...service.ids,
+    name: name || undefined,
+  });
   console.log(`${pc.green("✓")} wrote ${path}`);
 }

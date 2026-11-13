@@ -70,7 +70,8 @@ Run `dokploy login <alias>` again to change a host's url or key.
 
 Each repo gets a `.dokploy.json` at its root with the host alias and the service id
 (the legacy `.dokploysettings` name is still read if present). `dokploy init` lists your
-hosts to pick one, or adds a new host on the spot:
+hosts to pick one, or adds a new host on the spot. Then it lists every compose and app on
+that host: type the number, or paste an id:
 
 ```bash
 dokploy init
@@ -116,7 +117,7 @@ You can find ids with `dokploy projects | grep -i "my-app"` or with the composeI
 | `dokploy env [target]` | print the service env |
 | `dokploy env -e [target]` | edit the env in an editor; validates and saves on close |
 | `dokploy env -e --editor <cmd> [target]` | edit with a one-off editor override |
-| `dokploy init` | pick a host and write `.dokploy.json` in the current directory |
+| `dokploy init` | pick a host and a service, write `.dokploy.json` in the current directory |
 | `dokploy login [alias]` | add or update a host (`--editor` sets the default editor) |
 | `dokploy update` | update dokploy-cli to the latest version on npm |
 

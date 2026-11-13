@@ -46,7 +46,7 @@ program
 
 program
   .command("init")
-  .description("pick a host and write .dokploy.json in the current directory")
+  .description("pick a host and a service, write .dokploy.json in the current directory")
   .option("--compose-id <id>", "compose id for this project")
   .option("--name <name>", "friendly name")
   .action(run(initCommand));
