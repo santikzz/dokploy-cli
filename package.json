@@ -1,6 +1,6 @@
 {
   "name": "@santikzz/dokploy-cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Unofficial CLI for Dokploy: deployment status, poll, logs, apps",
   "type": "module",
   "license": "MIT",
