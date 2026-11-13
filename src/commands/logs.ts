@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import { DokployClient, type Deployment } from "../api.js";
-import { loadGlobalConfig } from "../config.js";
+import { loadHost } from "../config.js";
 import { resolveTarget, deploymentsFor } from "../resolve.js";
 import { statusBadge, fmtTime, duration } from "../ui.js";
 
@@ -8,7 +8,7 @@ import { statusBadge, fmtTime, duration } from "../ui.js";
 // but each deployment carries status, errorMessage and the server-side logPath.
 // this shows that detail for the latest (or a matching) deployment.
 export async function logsCommand(target: string | undefined, opts: { errors?: boolean }) {
-  const client = new DokployClient(loadGlobalConfig());
+  const client = new DokployClient(loadHost());
   const resolved = await resolveTarget(client, target);
   const deployments = await deploymentsFor(client, resolved);
 

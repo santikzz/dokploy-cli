@@ -14,11 +14,17 @@ const program = new Command();
 program
   .name("dokploy")
   .description("unofficial cli for dokploy: deployment status, poll, logs")
-  .version("0.2.1");
+  .version("0.3.0")
+  .option("-H, --host <alias>", "host alias to use (overrides .dokploy.json)")
+  .hook("preAction", (cmd) => {
+    const { host } = cmd.opts();
+    if (host) process.env.DOKPLOY_HOST = host;
+  });
 
 program
   .command("login")
-  .description("store api key and base url in ~/.dokploy-cli/config.json")
+  .description("add or update a host (alias, base url, api key) in ~/.dokploy-cli/config.json")
+  .argument("[alias]", "host alias, e.g. prod")
   .option("--base-url <url>", "dokploy base url")
   .option("--api-key <key>", "api key")
   .option("--editor <cmd>", "default editor for `env -e` (e.g. code, nano, vim, cursor)")
@@ -26,7 +32,7 @@ program
 
 program
   .command("init")
-  .description("create a .dokploysettings file in the current directory")
+  .description("pick a host and write .dokploy.json in the current directory")
   .option("--compose-id <id>", "compose id for this project")
   .option("--name <name>", "friendly name")
   .action(run(initCommand));

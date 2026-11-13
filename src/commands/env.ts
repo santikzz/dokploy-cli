@@ -5,7 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import pc from "picocolors";
 import { DokployClient, type Application, type Compose } from "../api.js";
-import { loadGlobalConfig, loadProjectSettings } from "../config.js";
+import { loadHost, loadProjectSettings, readGlobalConfig } from "../config.js";
 import { resolveTarget, type Target } from "../resolve.js";
 import { editFile } from "../editor.js";
 import { validateEnv, type EnvError } from "../envfile.js";
@@ -13,8 +13,7 @@ import { validateEnv, type EnvError } from "../envfile.js";
 // dokploy stores env as a single multiline string. get prints it; --edit opens it
 // in an editor (ephemeral temp file), validates on close, and pushes it back if valid.
 export async function envCommand(target: string | undefined, opts: { edit?: boolean; editor?: string }) {
-  const cfg = loadGlobalConfig();
-  const client = new DokployClient(cfg);
+  const client = new DokployClient(loadHost());
   const resolved = await resolveTarget(client, target);
   const record = await fetchRecord(client, resolved);
   const current = normalize((record.env as string | null) ?? "");
@@ -25,7 +24,7 @@ export async function envCommand(target: string | undefined, opts: { edit?: bool
   }
 
   const project = loadProjectSettings();
-  const preferred = opts.editor ?? project?.editor ?? cfg.editor;
+  const preferred = opts.editor ?? project?.editor ?? readGlobalConfig().editor;
   const id = "composeId" in resolved ? resolved.composeId : resolved.applicationId;
   const tmp = join(tmpdir(), `dokploy-env-${id}.env`);
 

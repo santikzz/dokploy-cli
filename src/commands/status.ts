@@ -1,11 +1,11 @@
 import pc from "picocolors";
 import { DokployClient } from "../api.js";
-import { loadGlobalConfig } from "../config.js";
+import { loadHost } from "../config.js";
 import { resolveTarget, deploymentsFor } from "../resolve.js";
 import { table, deploymentRow, DEPLOYMENT_HEADERS } from "../ui.js";
 
 export async function statusCommand(target: string | undefined, opts: { limit: string }) {
-  const client = new DokployClient(loadGlobalConfig());
+  const client = new DokployClient(loadHost());
   const resolved = await resolveTarget(client, target);
   const deployments = await deploymentsFor(client, resolved);
 

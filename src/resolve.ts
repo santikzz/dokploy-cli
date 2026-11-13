@@ -21,7 +21,7 @@ export async function resolveTarget(
   if (settings?.applicationId) return { applicationId: settings.applicationId };
 
   throw new Error(
-    'no target. pass a name/id, or add a .dokploysettings file here ("dokploy init")',
+    'no .dokploy.json here. run "dokploy init" or pass a name/id',
   );
 }
 

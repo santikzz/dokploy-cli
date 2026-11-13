@@ -1,4 +1,4 @@
-import type { GlobalConfig } from "./config.js";
+import type { Host } from "./config.js";
 
 export type DeploymentStatus = "running" | "done" | "error" | "idle";
 
@@ -72,7 +72,7 @@ export class DokployError extends Error {
 export type LifecycleAction = "deploy" | "redeploy" | "start" | "stop";
 
 export class DokployClient {
-  constructor(private cfg: GlobalConfig) {}
+  constructor(private cfg: Host) {}
 
   private async get<T>(path: string, params: Record<string, string> = {}): Promise<T> {
     const url = new URL(`${this.cfg.baseUrl}/api/${path}`);

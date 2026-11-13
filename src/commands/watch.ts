@@ -1,7 +1,7 @@
 import ora from "ora";
 import pc from "picocolors";
 import { DokployClient, type Deployment } from "../api.js";
-import { loadGlobalConfig } from "../config.js";
+import { loadHost } from "../config.js";
 import { resolveTarget, deploymentsFor } from "../resolve.js";
 import { isTerminal, duration, fmtTime } from "../ui.js";
 
@@ -11,7 +11,7 @@ const STALE_MS = 15 * 60 * 1000; // warn if latest already finished >15m ago
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function watchCommand(target: string | undefined) {
-  const client = new DokployClient(loadGlobalConfig());
+  const client = new DokployClient(loadHost());
   const resolved = await resolveTarget(client, target);
 
   const first = await latest(client, resolved);

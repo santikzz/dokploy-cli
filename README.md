@@ -9,12 +9,6 @@ errors, and edit service env vars in your editor - all over Dokploy's REST API.
 The official CLI is limited; this wraps the API (`x-api-key`) for the things you actually
 do day to day.
 
-```bash
-npm install -g @santikzz/dokploy-cli
-dokploy login
-dokploy deploy --help
-```
-
 ## Contents
 
 - [dokploy-cli](#dokploy-cli)
@@ -63,28 +57,46 @@ access to your account.
 
 ## Configure
 
-Credentials are global, stored in `~/.dokploy-cli/config.json` (mode `600`):
+Each Dokploy instance is a **host** with an alias, stored globally in
+`~/.dokploy-cli/config.json` (mode `600`). Add one host per Dokploy instance:
 
 ```bash
-dokploy login --base-url https://your.dokploy.host --api-key <YOUR_KEY>
+dokploy login prod --base-url https://dokploy.example.com --api-key <YOUR_KEY>
+dokploy login staging --base-url https://dokploy.staging.dev --api-key <OTHER_KEY>
 # or just run `dokploy login` for interactive prompts
 ```
 
-Per-project resource ids live in a `.dokploy.json` file at the repo root
-(the legacy `.dokploysettings` name is still read if present):
+Run `dokploy login <alias>` again to change a host's url or key.
+
+Each repo gets a `.dokploy.json` at its root with the host alias and the service id
+(the legacy `.dokploysettings` name is still read if present). `dokploy init` lists your
+hosts to pick one, or adds a new host on the spot:
 
 ```bash
-dokploy init --compose-id <COMPOSE_ID> --name my-project
+dokploy init
+# or non-interactive
+dokploy init --host prod --compose-id <COMPOSE_ID> --name my-project
 ```
 
 ```jsonc
 // .dokploy.json
 {
+  "host": "prod",
   "composeId": "ALNN58q7AXoK78N0yG5E3",
   "name": "my-project",
   "editor": "code" // optional, overrides the global default for this project
 }
 ```
+
+Host resolution, first match wins:
+
+1. `--host <alias>` (`-H`) flag, or the `DOKPLOY_HOST` env var
+2. `host` in `.dokploy.json`
+3. the only host, when just one is set up
+
+`DOKPLOY_BASE_URL` + `DOKPLOY_API_KEY` env vars, when both are set, skip the config
+entirely (handy in CI). With more than one host and no `.dokploy.json`, commands stop with
+an error that lists your hosts.
 
 You can find ids with `dokploy projects | grep -i "my-app"` or with the composeId on the dashboard project URL.
 
@@ -104,11 +116,12 @@ You can find ids with `dokploy projects | grep -i "my-app"` or with the composeI
 | `dokploy env [target]` | print the service env |
 | `dokploy env -e [target]` | edit the env in an editor; validates and saves on close |
 | `dokploy env -e --editor <cmd> [target]` | edit with a one-off editor override |
-| `dokploy init` | write `.dokploy.json` in the current directory |
-| `dokploy login` | write global credentials (`--editor` sets the default editor) |
+| `dokploy init` | pick a host and write `.dokploy.json` in the current directory |
+| `dokploy login [alias]` | add or update a host (`--editor` sets the default editor) |
 
 `[target]` is optional: a project/service **name** or a raw **compose id**. Omit it to
-use the `.dokploy.json` in the current directory.
+use the `.dokploy.json` in the current directory. Every command accepts `-H <alias>` to
+pick the host.
 
 ## Usage
 
@@ -149,18 +162,32 @@ dokploy deploy my-app && dokploy watch my-app
 
 ## Config reference
 
-Global credentials - `~/.dokploy-cli/config.json` (written by `dokploy login`):
+Global hosts - `~/.dokploy-cli/config.json` (written by `dokploy login` and `dokploy init`):
+
+```json
+{
+  "hosts": {
+    "prod": { "baseUrl": "https://dokploy.example.com", "apiKey": "..." },
+    "staging": { "baseUrl": "https://dokploy.staging.dev", "apiKey": "..." }
+  },
+  "editor": "code"
+}
+```
 
 | Key | Type | Required | Description |
 |---|---|---|---|
-| `baseUrl` | string | yes | Root URL of your Dokploy dashboard, e.g. `https://dokploy.example.com`. Trailing slashes are stripped. |
-| `apiKey` | string | yes | Dokploy API key sent as the `x-api-key` header. |
+| `hosts.<alias>.baseUrl` | string | yes | Root URL of the Dokploy dashboard. Trailing slashes are stripped. |
+| `hosts.<alias>.apiKey` | string | yes | Dokploy API key sent as the `x-api-key` header. |
 | `editor` | string | no | Default editor command for `env -e`, e.g. `code`, `nano`, `vim`, `"code --wait"`. |
+
+An old single-host config (`baseUrl`/`apiKey` at the top level) is read as the host `main`
+and rewritten in the new shape on the next `login`.
 
 Per-project settings - `.dokploy.json` at the repo root (written by `dokploy init`):
 
 | Key | Type | Required | Description |
 |---|---|---|---|
+| `host` | string | when 2+ hosts | Host alias from the global config. |
 | `composeId` | string | one id required | Compose service id to target. |
 | `applicationId` | string | one id required | Application service id to target (alternative to `composeId`). |
 | `projectId` | string | no | Project id, for disambiguation. |

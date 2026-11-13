@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import { DokployClient, type LifecycleAction } from "../api.js";
-import { loadGlobalConfig } from "../config.js";
+import { loadHost } from "../config.js";
 import { resolveTarget, type Target } from "../resolve.js";
 
 type Command = "deploy" | "redeploy" | "stop" | "restart";
@@ -15,7 +15,7 @@ const LABELS: Record<Command, string> = {
 // deploy/redeploy trigger a build; watch to follow it. stop/restart are immediate.
 export function lifecycleCommand(command: Command) {
   return async (target: string | undefined) => {
-    const client = new DokployClient(loadGlobalConfig());
+    const client = new DokployClient(loadHost());
     const resolved = await resolveTarget(client, target);
     const name = "composeId" in resolved ? resolved.composeId : resolved.applicationId;
 

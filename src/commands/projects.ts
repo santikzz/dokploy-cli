@@ -1,12 +1,12 @@
 import pc from "picocolors";
 import { DokployClient, projectServices } from "../api.js";
-import { loadGlobalConfig } from "../config.js";
+import { loadHost } from "../config.js";
 import { statusBadge } from "../ui.js";
 
 // lists all projects with their compose/application services and ids,
 // so you can find the id to drop into a .dokploysettings file.
 export async function projectsCommand() {
-  const client = new DokployClient(loadGlobalConfig());
+  const client = new DokployClient(loadHost());
   const projects = await client.projects();
 
   if (projects.length === 0) {
